@@ -3,10 +3,13 @@ import pandas as pd
 import requests 
 from bs4 import BeautifulSoup
 
+from collections import Counter
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
 #################################
 # find genre of particular show #
 #################################
-
 def find_genre(url):
     
     response = requests.get(url)
@@ -32,7 +35,6 @@ def find_genre(url):
     list_genre = sep.join(list_genre_per_show)
 
     return list_genre
-
 
 ############################
 # create_imdb_rating_table #
@@ -69,8 +71,7 @@ def create_imdb_rating_table():
         
     imdb_rating_table['Title'] = list_titles
     imdb_rating_table['link'] = list_links
-    imdb_rating_table['Genre'] = list_genres
-    
+    imdb_rating_table['Genre'] = list_genres    
     
     # ratings
     ratings = soup.find_all("td", {"class": "imdbRating"})
@@ -82,3 +83,33 @@ def create_imdb_rating_table():
     imdb_rating_table['Rating'] = list_ratings
     
     return imdb_rating_table
+
+imdb_table = create_imdb_rating_table()
+
+# save to csv
+#imdb_table.to_csv('imdb_table.csv')
+
+# save genre to list
+list_genres = []
+for genres in imdb_table['Genre']:
+    list_genres.append(genres.split(' | '))
+
+# flatten list
+list_genres = [genre for sub_list_genre in list_genres for genre in sub_list_genre]
+word_genres = ' '.join(list_genres)
+
+# create word cloud
+def one_color_func(word=None, font_size=None, 
+                   position=None, orientation=None, 
+                   font_path=None, random_state=None):
+    h = random_state.randint(250, 350) # 0 - 360
+    s = random_state.randint(60, 100) # 0 - 100
+    l = random_state.randint(15, 60) # 0 - 100
+    return "hsl({}, {}%, {}%)".format(h, s, l)
+
+wc = WordCloud(background_color="yellow", color_func=one_color_func, width=1600, height=1200)
+wc.generate_from_frequencies(Counter(list_genres))
+plt.figure(figsize=(12,8))
+plt.imshow(wc)
+plt.axis('off')
+plt.show()
